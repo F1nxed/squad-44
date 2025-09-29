@@ -56,6 +56,8 @@ class Task_manager(commands.Cog):
                 target_seconds = int(target_time.timestamp())
 
                 if abs(now_seconds - target_seconds) <= 30:
+                    # Need to remove this hardcoded guild ID for future references..
+                    # maybe add it to schedules?
                     guild_id = 643457260030394387
                     channel_data = await self.bot.db.find_channel_data(
                         guild=guild_id, type="History"

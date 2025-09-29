@@ -10,21 +10,20 @@ class Database:
         self.conn: aiosqlite.Connection | None = None
 
     async def connect(self):
+        # Starts the connection to the DB
         self.conn = await aiosqlite.connect(self.db_path)
         self.conn.row_factory = aiosqlite.Row
         await self.conn.execute("PRAGMA foreign_keys = ON;")
         await self.conn.commit()
 
     async def close(self):
+        # Closes the connection to DB when the client is shutdown
         if self.conn:
             await self.conn.close()
 
     async def add_squad_member(self, owner, squad, role, player, nickname):
-        print("I did run")
         current_game = await self.get_newst_game()
         # Check so match number of players not reached
-        print(player)
-        print(nickname)
         player_id = await self.find_user(user=player, nickname=nickname)
         already_signedup = await self.check_if_already_signedup(player_id=player_id)
         if already_signedup:
@@ -65,7 +64,6 @@ class Database:
         # Check if Owner is already signed up and is in database if not in database add.
         player_id = await self.find_user(user=user, nickname=nickname)
         signed_up = await self.check_if_already_signedup(player_id)
-        print(f"Signup mr id {player_id}")
         if signed_up:
             # Return Message player already signedup
             return "User already signed up"
@@ -80,7 +78,7 @@ class Database:
     async def find_user(self, user, nickname: str | None = None):
         if nickname is None:
             nickname = user
-
+        # Checks what type has been added. Discord ID or just Name
         if isinstance(user, int):
             # Discord ID input
             query = "SELECT player_id FROM players WHERE discord_id = ?"
@@ -100,6 +98,7 @@ class Database:
             insert_params = (user, nickname)
 
         else:
+            # Something not correct added
             raise ValueError("user must be int (discord_id) or str (player_name)")
 
         # Look for existing record
@@ -115,6 +114,9 @@ class Database:
             return cursor.lastrowid
 
     async def check_if_right_role(self, squad, squad_id):
+        # Check that the role is correct.
+        # This function is obselete. The View function dont premit ppl to
+        # add wrong roles
         query = "SELECT type_id FROM squads WHERE squad_id = ?"
         match squad:
             case "Commander":
@@ -149,17 +151,19 @@ class Database:
         return squad is not None
 
     async def check_if_max_signup_reached(self, game_id):
+        # count how many is signed up and stops it at 100
         query = "SELECT count(player_id) FROM squad_assignments WHERE squad_id IN (SELECT squad_id FROM squads WHERE game_id = ?)"
         async with self.conn.execute(query, (game_id,)) as cursor:
             row = await cursor.fetchone()
         total_players = row[0]
         print(total_players)
-        if total_players < 100:
+        if total_players <= 100:
             return False
         else:
             return True
 
     async def check_if_squad_is_full(self, squad_id, squad_type):
+        # Controll check if the squad is full and cant handle any more members
         query = "SELECT count(player_id) FROM squad_assignments WHERE squad_id = ?"
         async with self.conn.execute(query, (squad_id,)) as cursor:
             row = await cursor.fetchone()
@@ -173,6 +177,8 @@ class Database:
 
     async def select_side(self, game_id, squad, name, owner_id):
         # Sort out Squad Type and Leader role.
+        # This function randomiser and palce squads on appropriet
+        # Sides depending on player ammount and squad types
         match squad:
             case "Commander":
                 type_id = 1
@@ -268,7 +274,7 @@ class Database:
             return "There was an Error in enlistment proccess"
 
     async def add_game(self, date, title, description):
-        # Adds a game to the current playlist (REMAKE NEEDED THIS IS JUST FOR TEST)
+        # Adds a game to the current playlist same as starting a new game
         query = "INSERT INTO games (game_date, title, description) VALUES (?, ?, ?)"
         try:
             await self.conn.execute(query, (date, title, description))
@@ -278,6 +284,7 @@ class Database:
             return False
 
     async def get_game_data(self):
+        # collects the game data for the squad composition
         query = """
             SELECT game_id, game_date, title, description
             FROM games
@@ -325,6 +332,7 @@ class Database:
             return False
 
     async def get_newst_game(self):
+        # Collect the game id of the active game
         query = "SELECT game_id FROM games ORDER BY game_id DESC LIMIT 0, 1"
         async with self.conn.execute(query) as cursor:
             row = await cursor.fetchone()
@@ -334,6 +342,7 @@ class Database:
     async def save_channel_data(
         self, guild_id, category_id, channel_id, message_id, type
     ):
+        # Saves the channel data of selected channels
         query = """
         INSERT INTO channel_manager (guild, type, category, channel, message)
         VALUES (?, ?, ?, ?, ?)
@@ -347,6 +356,7 @@ class Database:
         await self.conn.commit()
 
     async def find_channel_data(self, guild, type):
+        # Find the channel data
         query = """
                 SELECT category as category, channel as channel, message as message FROM channel_manager WHERE guild = ? AND type = ?
                 """
@@ -361,6 +371,7 @@ class Database:
         return result
 
     async def get_squad_data(self, guild_id):
+        # Get all data for signed up squads and members.
         query = """
                 SELECT 
                 s.side_name,
@@ -418,6 +429,7 @@ class Database:
         return data
 
     async def get_squad_type(self, owner):
+        # Check what type of squad the owner has
         current_game = await self.get_newst_game()
         player_id = await self.find_user(user=owner)
         squad_id = await self.get_squad_id(owner_id=player_id, game_id=current_game)
@@ -438,6 +450,7 @@ class Database:
             return None
 
     async def get_squad_members(self, owner):
+        # Get the members of the squad
         current_game = await self.get_newst_game()
         player_id = await self.find_user(user=owner)
         squad_id = await self.get_squad_id(owner_id=player_id, game_id=current_game)
@@ -452,12 +465,10 @@ class Database:
         async with self.conn.execute(query, (squad_id,)) as cursor:
             rows = await cursor.fetchall()
 
-        # rows: [(123, "SomeName", "Medic"), (456, "OtherName", "Rifle Man"), ...]
         return rows
 
     async def get_player_name(self, player_id):
-        print(player_id)
-        print("I run this yes")
+        # Get the name of selected player_id
         query = "SELECT player_nickname FROM players WHERE player_id = ?"
         async with self.conn.execute(query, (player_id)) as cursor:
             row = await cursor.fetchone()
@@ -465,7 +476,7 @@ class Database:
         return player_name
 
     async def edit_squad_member(self, owner: int, player_id: str, new_role: str):
-
+        # Change the role of selected member in owners squad
         role_id = await self.get_role_id(role=new_role)
         owner_id = await self.find_user(user=owner)
         game_id = await self.get_newst_game()
@@ -481,7 +492,7 @@ class Database:
         return f"✅ Updated role for {player_name} to {new_role}"
 
     async def remove_squad_member(self, owner: int, player_id: str):
-
+        # Removes selected member out of owners squad
         owner_id = await self.find_user(user=owner)
         game_id = await self.get_newst_game()
         squad_id = await self.get_squad_id(owner_id=owner_id, game_id=game_id)
@@ -495,12 +506,9 @@ class Database:
         return f"❌ Removed {player_name} from your squad."
 
     async def check_if_has_squad(self, user):
+        # Great english but checks if user has a squad
         current_game = await self.get_newst_game()
         player_id = await self.find_user(user=user)
-
-        print(
-            f"DEBUG → user={user}, player_id={player_id}, current_game={current_game}"
-        )
 
         query = """
             SELECT squad_id
@@ -511,10 +519,11 @@ class Database:
         async with self.conn.execute(query, (player_id, current_game)) as cursor:
             row = await cursor.fetchone()
 
-        print(f"DEBUG → query result={row}")
         return row is not None
 
     async def get_times(self):
+        # Probably going to be a change here to also select the guild ID that
+        # that will be added in to this
         query = "SELECT time_str FROM schedules"
 
         async with self.conn.execute(query) as cursor:
@@ -523,6 +532,7 @@ class Database:
         return results
 
     async def get_active_players(self):
+        # Get all the active players to run service record update
         query = """
                 SELECT p.player_id, f.message_id, f.thread_id, p.player_nickname
                 FROM squads s
@@ -538,6 +548,7 @@ class Database:
         return results
 
     async def save_player_thread(self, player_id, thread_id, message_id):
+        # Save the thread ID of player to played data
         query = (
             "INSERT INTO forum_posts(player_id, thread_id, message_id) VALUES (?, ?, ?)"
         )
@@ -547,6 +558,7 @@ class Database:
             await self.conn.commit()
 
     async def games_played(self, player_id):
+        # Count how many games player has played
         query = """
                 SELECT COUNT(DISTINCT s.game_id)
                 FROM squad_assignments sa
@@ -558,6 +570,7 @@ class Database:
         return results[0]
 
     async def squads_played(self, player_id):
+        # check how many times he played what type of squad
         query = """
                 SELECT st.type_name, COUNT(*) 
                 FROM squad_assignments sa
@@ -571,6 +584,7 @@ class Database:
         return results
 
     async def roles_played(self, player_id):
+        # Check what Roles the player has played
         query = """
                 SELECT r.role_name, COUNT(*) 
                 FROM squad_assignments sa
@@ -583,6 +597,7 @@ class Database:
         return results
 
     async def sides_played(self, player_id):
+        # Check what side the player has played the most
         query = """
                 SELECT si.side_name, COUNT(*) 
                 FROM squad_assignments sa
@@ -596,7 +611,7 @@ class Database:
         return results
 
     async def remove_squad_and_members(self, owner_id: int) -> str:
-
+        # Completley remove owners squad
         player_id = await self.find_user(user=owner_id)
 
         async with self.conn.execute(

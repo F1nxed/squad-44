@@ -33,6 +33,7 @@ class Squad_manager(commands.Cog):
     # =============== DB HELPERS ==================
 
     async def add_squad_member(
+        # Sends to the DB to add a mamaber to the owners squad
         self,
         owner: int,
         squad: str,
@@ -41,13 +42,12 @@ class Squad_manager(commands.Cog):
         nickname: Optional[str],
         guild_id: Optional[int],
     ):
-        """Insert new squad member (Discord user or external)."""
         result = await self.bot.db.add_squad_member(
             owner=owner,
             squad=squad,
             role=role,
-            player=player_id,  # int Discord ID or None for external
-            nickname=nickname,  # display name / external name
+            player=player_id,
+            nickname=nickname,
         )
         if guild_id:
             squad_cog = self.bot.get_cog("Squad_composition")
@@ -58,7 +58,7 @@ class Squad_manager(commands.Cog):
     async def edit_squad_member_role(
         self, owner: int, player_id: str, new_role: str, guild_id: Optional[int]
     ):
-        """Change a member's role in the squad."""
+        # Change the Role of a member of the squad
         result = await self.bot.db.edit_squad_member(
             owner=owner, player_id=player_id, new_role=new_role
         )
@@ -71,7 +71,7 @@ class Squad_manager(commands.Cog):
     async def remove_squad_member(
         self, owner: int, player_id: str, guild_id: Optional[int]
     ):
-        """Remove a member from the squad."""
+        # Removes a Member of the owners squad
         result = await self.bot.db.remove_squad_member(owner=owner, player_id=player_id)
         if guild_id:
             squad_cog = self.bot.get_cog("Squad_composition")
@@ -80,15 +80,17 @@ class Squad_manager(commands.Cog):
         return result
 
     async def get_user_squad_type(self, user_id: int):
+        # Check what squad type the owner has so he can get the proper options
         return await self.bot.db.get_squad_type(user_id)
 
     async def get_squad_members(self, user_id: int):
-        """Return list of (player_id, nickname, role)."""
+        # Checks what members and Role are enlisted in owners squad
         return await self.bot.db.get_squad_members(user_id)
 
     # =============== PLAYER ADD VIEWS ==================
 
     class AddExternalPlayerModal(discord.ui.Modal, title="Add External Player"):
+        # Handles a popup to add someone not using @ player for external players
         def __init__(self, cog, category: str, role: str):
             super().__init__()
             self.cog = cog
@@ -116,6 +118,8 @@ class Squad_manager(commands.Cog):
             await interaction.response.edit_message(content=answer, view=None)
 
     class AddPlayerPickerView(discord.ui.View):
+        # Gets a dropdown list of all members in the discord
+        # For easy selection of squad members
         def __init__(self, cog, user: discord.User, category: str, role: str):
             super().__init__(timeout=120)
             self.cog = cog
@@ -136,21 +140,21 @@ class Squad_manager(commands.Cog):
             self, interaction: Interaction, select: discord.ui.UserSelect
         ):
             member = select.values[0]
-            # ensure Member shape (User also has display_name but Member preferred)
             if isinstance(member, discord.User):
                 member = interaction.guild.get_member(member.id) or member
 
-            nickname = getattr(member, "nick", None) or member.display_name
+            nickname = getattr(member, "Nickname", None) or member.display_name
             answer = await self.cog.add_squad_member(
                 owner=self.user.id,
                 squad=self.category,
                 role=self.role,
-                player_id=member.id,  # store Discord ID
-                nickname=nickname,  # store display/nick
+                player_id=member.id,
+                nickname=nickname,
                 guild_id=interaction.guild.id,
             )
             await interaction.response.edit_message(content=answer, view=None)
 
+        # Button for popup of external
         @discord.ui.button(
             label="Add external name", style=discord.ButtonStyle.secondary
         )
@@ -170,6 +174,7 @@ class Squad_manager(commands.Cog):
         async def interaction_check(self, interaction: Interaction) -> bool:
             return interaction.user.id == self.user.id
 
+        # First options after running the /Suqad
         @discord.ui.select(
             placeholder="Choose an action...",
             options=[

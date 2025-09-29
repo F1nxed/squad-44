@@ -14,6 +14,10 @@ class Game_manager(commands.Cog):
         if str(date):
             unix_time = int(date.split(":")[1])
         # Make sure that the timestamp is an Interger
+        # Need to add the call for the stats_manager before adding
+        # This will trigger the making of player service records..
+        # would be good idea to make sure that peeople have the correct
+        # members signed up
         if int(unix_time):
             print(unix_time)
             answer = await self.bot.db.add_game(unix_time, title, description)
