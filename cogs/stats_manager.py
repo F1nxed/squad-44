@@ -18,7 +18,6 @@ class Stats_manager(commands.Cog):
                 await self.create_post(player_id=player_id, player_name=player_nickname)
             else:
                 # Update exisitng Forum Post:
-                print("He had soem data yes")
                 await self.update_post(
                     player_id=player_id, message_id=message_id, thread_id=thread_id
                 )

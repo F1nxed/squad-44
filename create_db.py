@@ -44,9 +44,9 @@ INSERT OR IGNORE INTO roles VALUES (9, 'Light Anti-Tank');
 INSERT OR IGNORE INTO roles VALUES (10, 'Sapper');
 INSERT OR IGNORE INTO roles VALUES (11, 'Grenadier');
 INSERT OR IGNORE INTO roles VALUES (12, 'Mortarman');
-INSERT OR IGNORE INTO roles VALUES (13, 'Combat Engineer Anti Personel');
-INSERT OR IGNORE INTO roles VALUES (14, 'Combat Engineer Anti Tank');
-INSERT OR IGNORE INTO roles VALUES (15, 'Combat Engineer High Explosive');
+INSERT OR IGNORE INTO roles VALUES (13, 'Combat Engineer AP');
+INSERT OR IGNORE INTO roles VALUES (14, 'Combat Engineer AT');
+INSERT OR IGNORE INTO roles VALUES (15, 'Combat Engineer HE');
 INSERT OR IGNORE INTO roles VALUES (16, 'Tanker');
 
 -- Players  (removed trailing comma; you can add player_stats if you need it)

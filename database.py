@@ -631,3 +631,103 @@ class Database:
         await self.conn.commit()
 
         return f"Squad {squad_id} and all its members have been removed."
+
+    async def get_all_squads(self):
+        # Returns a list of dicts
+        # Example: [{"id": 1, "name": "Alpha", "side": "Allies"}, ...]
+        active_game = await self.get_newst_game()
+
+        query = """
+            SELECT 
+                s.squad_id AS id, 
+                s.squad_name AS name, 
+                si.side_name AS side
+            FROM squads s
+            JOIN sides si ON s.side_id = si.side_id
+            WHERE s.game_id = ?
+        """
+        async with self.conn.execute(query, (active_game,)) as cursor:
+            rows = await cursor.fetchall()
+
+        if not rows:
+            return []
+
+        return [dict(row) for row in rows]
+
+    async def switch_squad_side(self, squad_id: int):
+        """Swap a squad from Allies to Axis or vice versa."""
+        # Get current side
+        query = "SELECT side_id FROM squads WHERE squad_id = ?"
+        async with self.conn.execute(query, (squad_id,)) as cursor:
+            row = await cursor.fetchone()
+        if not row:
+            return "❌ Squad not found."
+
+        current_side = row[0]
+        new_side = 2 if current_side == 1 else 1
+
+        await self.conn.execute(
+            "UPDATE squads SET side_id = ? WHERE squad_id = ?", (new_side, squad_id)
+        )
+        await self.conn.commit()
+
+        # Lookup new side name
+        query = "SELECT side_name FROM sides WHERE side_id = ?"
+        async with self.conn.execute(query, (new_side,)) as cursor:
+            side_row = await cursor.fetchone()
+        side_name = side_row[0] if side_row else f"Side {new_side}"
+
+        return f"✅ Squad {squad_id} switched to {side_name}."
+
+    async def remove_squad(self, squad_id: int):
+        """Remove a squad and all its members from the current game."""
+        # Delete assignments first
+        await self.conn.execute(
+            "DELETE FROM squad_assignments WHERE squad_id = ?", (squad_id,)
+        )
+        await self.conn.execute("DELETE FROM squads WHERE squad_id = ?", (squad_id,))
+        await self.conn.commit()
+        return f"🗑️ Squad {squad_id} and its members have been removed."
+
+    async def get_current_game(self):
+        """Fetch the currently active (most recent) game."""
+        query = """
+            SELECT game_id AS id, game_date AS time, title, description
+            FROM games
+            ORDER BY game_id DESC
+            LIMIT 1
+        """
+        async with self.conn.execute(query) as cursor:
+            row = await cursor.fetchone()
+
+        if not row:
+            return None
+
+        return dict(row)
+
+    async def update_game_data(self, title: str, time_unix: int, description: str):
+        """Update title, time, and description for the current active game."""
+        current_game = await self.get_newst_game()
+        query = """
+            UPDATE games
+            SET title = ?, game_date = ?, description = ?
+            WHERE game_id = ?
+        """
+        await self.conn.execute(query, (title, time_unix, description, current_game))
+        await self.conn.commit()
+        return "✅ Game information updated."
+
+    async def create_next_game(self, new_time_unix: int):
+        """Clone current game data and create a new game one week later."""
+        current = await self.get_current_game()
+        if not current:
+            return "No current game to copy."
+
+        title = f"{current['title']} (Next)"
+        description = current.get("description", "")
+
+        query = "INSERT INTO games (game_date, title, description) VALUES (?, ?, ?)"
+        await self.conn.execute(query, (new_time_unix, title, description))
+        await self.conn.commit()
+
+        return f"🆕 Created next game '{title}' for <t:{new_time_unix}:F>"
