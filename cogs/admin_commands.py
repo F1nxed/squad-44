@@ -25,15 +25,17 @@ class Admin_Commands(commands.Cog):
         return await self.bot.db.update_game_data(title, time_unix, description)
 
     async def finish_current_game(self):
+        print("Finnis game")
         squad_cog = self.bot.get_cog("Stats_manager")
         if squad_cog is not None:
-            await squad_cog.update_Stats()
+            await squad_cog.update_stats()
 
     async def create_next_game(self, time: str):
         return await self.bot.db.create_next_game(time)
 
     async def update_squad_composition(self, guild_id):
         squad_cog = self.bot.get_cog("Squad_composition")
+        print("squad update")
         if squad_cog is not None:
             await squad_cog.update_squad_composition(guild_id)
 

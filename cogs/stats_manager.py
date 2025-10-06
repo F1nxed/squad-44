@@ -8,8 +8,8 @@ class Stats_manager(commands.Cog):
     def __init__(self, bot) -> None:
         self.bot = bot
 
-    @app_commands.command(name="update_stats", description="test")
-    async def update_Stats(self, interaction: Interaction):
+    async def update_stats(self):
+        print("Running update on player stats")
         # Need all players that was in game.. their ID and Messplayer_stats
         players = await self.bot.db.get_active_players()
         for player_id, message_id, thread_id, player_nickname in players:

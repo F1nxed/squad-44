@@ -42,6 +42,7 @@ class Squad_composition(commands.Cog):
 
     async def update_squad_composition(self, guild):
         # Get the update channel:
+        print("update squad composition")
         channel_data = await self.bot.db.find_channel_data(
             guild=guild, type="Composition"
         )
