@@ -168,7 +168,7 @@ class Database:
         async with self.conn.execute(query, (squad_id,)) as cursor:
             row = await cursor.fetchone()
         squad_members = row[0]
-        squad_max = {"Commander": 1, "Infantry": 9, "Logistic": 4, "Armor": 4}
+        squad_max = {"Commander": 2, "Infantry": 20, "Logistic": 4, "Armor": 4}
         print(squad_members)
         if squad_members < squad_max[squad_type]:
             return False
