@@ -12,26 +12,34 @@ class Stats_manager(commands.Cog):
         print("Running update on player stats")
         # Need all players that was in game.. their ID and Messplayer_stats
         players = await self.bot.db.get_active_players()
-        for player_id, message_id, thread_id, player_nickname in players:
+        for player_id, message_id, thread_id, player_nickname, discord_id in players:
+            if discord_id is None:
+                continue
             if message_id is None:
                 # Create a Forum post:
-                await self.create_post(player_id=player_id, player_name=player_nickname)
+                await self.create_post(
+                    player_id=player_id, player_nickname=player_nickname
+                )
             else:
                 # Update exisitng Forum Post:
                 await self.update_post(
-                    player_id=player_id, message_id=message_id, thread_id=thread_id
+                    player_id=player_id,
+                    message_id=message_id,
+                    thread_id=thread_id,
+                    player_nickname=player_nickname,
                 )
 
-    async def create_post(self, player_id, player_name):
+    async def create_post(self, player_id, player_nickname):
         # Get channel ID Figure out something better to get the guild ID
         channel_data = await self.bot.db.find_channel_data(
-            guild=643457260030394387, type="Stats"
+            guild=1378393725256077322, type="Stats"
         )
         channel_id = channel_data[0]["channel"]
         channel = self.bot.get_channel(channel_id)
         # Get Player Name to set title of the Thread
         post = await channel.create_thread(
-            name=f"{player_name}'s stats", content="Games played: 0\nRoles: None yet."
+            name=f"{player_nickname}'s stats",
+            content="Games played: 0\nRoles: None yet.",
         )
         # Get the channel and Post ID
         thread_id = post.thread.id
@@ -44,10 +52,15 @@ class Stats_manager(commands.Cog):
             player_id=player_id, message_id=message_id, thread_id=thread_id
         )
 
-    async def update_post(self, player_id, message_id, thread_id):
-
-        thread = self.bot.get_channel(thread_id)
-        msg = await thread.fetch_message(message_id)
+    async def update_post(self, player_id, message_id, thread_id, player_nickname):
+        try:
+            thread = self.bot.get_channel(thread_id)
+            print(f"Thread: {thread}")
+            msg = await thread.fetch_message(message_id)
+            print(f"Message: {msg}")
+        except Exception as arg:
+            print(arg)
+            await self.create_post(player_id=player_id, player_name=player_nickname)
         # Use player_id to get all relevant data yes
         games_played = await self.bot.db.games_played(player_id)
         print(games_played)

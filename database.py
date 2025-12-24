@@ -357,6 +357,8 @@ class Database:
 
     async def find_channel_data(self, guild, type):
         # Find the channel data
+        print(guild)
+        print(type)
         query = """
                 SELECT category as category, channel as channel, message as message FROM channel_manager WHERE guild = ? AND type = ?
                 """
@@ -369,6 +371,12 @@ class Database:
             result = [dict(r) for r in row]
 
         return result
+
+    async def get_guilds(self):
+        query = "SELECT DISTINCT guild FROM channel_manager"
+        async with self.conn.execute(query) as cursor:
+            rows = await cursor.fetchall()
+        return [r[0] for r in rows]
 
     async def get_squad_data(self, guild_id):
         # Get all data for signed up squads and members.
@@ -475,8 +483,11 @@ class Database:
         player_name = row[0]
         return player_name
 
-    async def edit_squad_member(self, owner: int, player_id: str, new_role: str):
+    async def edit_squad_member(self, owner: int, player: str, new_role: str):
         # Change the role of selected member in owners squad
+        print("Player id in edit squad")
+        print(player)
+        player_id = await self.find_user(user=player)
         role_id = await self.get_role_id(role=new_role)
         owner_id = await self.find_user(user=owner)
         game_id = await self.get_newst_game()
@@ -534,7 +545,7 @@ class Database:
     async def get_active_players(self):
         # Get all the active players to run service record update
         query = """
-                SELECT p.player_id, f.message_id, f.thread_id, p.player_nickname
+                SELECT p.player_id, f.message_id, f.thread_id, p.player_nickname, p.discord_id
                 FROM squads s
                 JOIN squad_assignments sa ON s.squad_id = sa.squad_id
                 JOIN players p ON sa.player_id = p.player_id

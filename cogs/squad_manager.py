@@ -349,7 +349,7 @@ class Squad_manager(commands.Cog):
     ):
 
         squad_leader = interaction.user.id
-        nickname = interaction.user.display_name
+        nickname = interaction.user.name
         print(f"Check if Nickname works: {nickname}")
         answer = await self.bot.db.check_if_has_squad(squad_leader)
 

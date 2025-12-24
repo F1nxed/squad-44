@@ -67,7 +67,7 @@ class Squad_composition(commands.Cog):
         # Define the display order you want
         SQUAD_TYPE_ORDER = ["Commander", "Infantry", "Logistic", "Armor"]
 
-        for side in ["Axis", "Alies"]:  # <-- watch spelling matches DB
+        for side in ["Axis", "Allies"]:  # <-- watch spelling matches DB
             if side not in squad_data:
                 embed.add_field(name=side.upper(), value="*No squads yet*", inline=True)
                 continue

@@ -21,7 +21,8 @@ class Task_manager(commands.Cog):
 
     async def get_scheduled_times(self):
         # Fetch times (HH:MM) from your DB cog
-        return await self.bot.db.get_times()
+        target_time = await self.bot.db.get_times()
+        return target_time
 
     async def get_ww2_summary(self):
         today = datetime.now().strftime("%B %d")
@@ -54,19 +55,22 @@ class Task_manager(commands.Cog):
                     day=datetime.now().day,
                 )
                 target_seconds = int(target_time.timestamp())
-
                 if abs(now_seconds - target_seconds) <= 30:
-                    # Need to remove this hardcoded guild ID for future references..
-                    # maybe add it to schedules?
-                    guild_id = 643457260030394387
-                    channel_data = await self.bot.db.find_channel_data(
-                        guild=guild_id, type="History"
-                    )
-                    channel_id = channel_data[0]["channel"]
-                    channel = self.bot.get_channel(channel_id)
-                    if channel:
-                        summary = await self.get_ww2_summary()
-                        await channel.send(f"📜 On this day in WWII:\n{summary}")
+                    guilds = await self.bot.db.get_guilds()
+                    summary = await self.get_ww2_summary()
+                    for guild in guilds:
+                        channel_data = await self.bot.db.find_channel_data(
+                            guild=guild, type="History"
+                        )
+                        channel_id = channel_data[0]["channel"]
+                        channel = self.bot.get_channel(channel_id)
+                        if channel is not None:
+                            msg = await channel.send(
+                                f"📜 On this day in WWII:\n{summary}"
+                            )
+                            if hasattr(channel, "is_news") and channel.is_news():
+                                await msg.publish()
+                        await asyncio.sleep(1)
         except Exception as e:
             print(f"[Task error] {e}")
 

@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS schedules (
     id       INTEGER PRIMARY KEY,
     time_str TEXT
 );
-INSERT OR IGNORE INTO schedules VALUES (1, '19:10');
+INSERT OR IGNORE INTO schedules VALUES (1, '20:00');
 
 -- Channel manager
 CREATE TABLE IF NOT EXISTS channel_manager (
