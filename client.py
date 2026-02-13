@@ -14,7 +14,7 @@ class Client(commands.Bot):
     async def on_ready(self):
         # Set Bot acctivity "Playing Squad 44"
         activity = discord.Activity(
-            type=discord.ActivityType.watching, name="Bob Ross painting"
+            type=discord.ActivityType.watching, name="The frontlines"
         )
         await self.change_presence(activity=activity)
         # Sync all the / commands
